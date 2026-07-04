@@ -50,4 +50,7 @@ commands.allow = [
   "sql_keychain_save",
   "sql_keychain_get",
   "sql_keychain_delete",
+  "ai_keychain_save",
+  "ai_keychain_get",
+  "ai_keychain_delete",
 ]

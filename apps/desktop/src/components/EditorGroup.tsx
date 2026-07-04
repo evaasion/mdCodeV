@@ -9,6 +9,7 @@ import type { AppTheme } from "../lib/appearance";
 import { monacoThemeId } from "../lib/appearance";
 import type { DropZone } from "../lib/editor-layout";
 import { dropZoneFromPoint } from "../lib/editor-layout";
+import type { EditorSelectionContext } from "../lib/ai-context";
 import { registerLuaLanguage } from "../lib/monaco-lua";
 import { registerMonacoThemes, setMonacoTheme } from "../lib/monaco-theme";
 import styles from "./EditorGroup.module.css";
@@ -43,6 +44,7 @@ interface EditorGroupProps {
   onTabDragStart: (payload: TabDragPayload) => void;
   onTabDragEnd: () => void;
   onDropTab: (payload: TabDragPayload, zone: DropZone, targetIndex?: number) => void;
+  onSelectionChange?: (selection: EditorSelectionContext | null) => void;
 }
 
 export function EditorGroup({
@@ -63,10 +65,19 @@ export function EditorGroup({
   onTabDragStart,
   onTabDragEnd,
   onDropTab,
+  onSelectionChange,
 }: EditorGroupProps) {
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const paneRef = useRef<HTMLDivElement | null>(null);
+  const focusedRef = useRef(focused);
+
+  useEffect(() => {
+    focusedRef.current = focused;
+    if (!focused) {
+      onSelectionChange?.(null);
+    }
+  }, [focused, onSelectionChange]);
   const [dropZone, setDropZone] = useState<DropZone | null>(null);
   const [tabDropIndex, setTabDropIndex] = useState<number | null>(null);
 
@@ -222,6 +233,23 @@ export function EditorGroup({
               if (activeTab.language === "fivem-lua") {
                 registerLuaLanguage(monaco, nativeIndex, onNativeSelect);
               }
+
+              editor.onDidChangeCursorSelection(() => {
+                if (!focusedRef.current || !onSelectionChange) return;
+                const model = editor.getModel();
+                const range = editor.getSelection();
+                if (!model || !range || range.isEmpty()) {
+                  onSelectionChange(null);
+                  return;
+                }
+                onSelectionChange({
+                  text: model.getValueInRange(range),
+                  startOffset: model.getOffsetAt(range.getStartPosition()),
+                  endOffset: model.getOffsetAt(range.getEndPosition()),
+                  startLine: range.startLineNumber,
+                  endLine: range.endLineNumber,
+                });
+              });
             }}
             options={{
               fontFamily: "JetBrains Mono, Fira Code, monospace",

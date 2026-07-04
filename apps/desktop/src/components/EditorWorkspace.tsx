@@ -18,6 +18,7 @@ import {
   splitGroupWithTab,
 } from "../lib/editor-layout";
 import { EditorGroup, type TabDragPayload } from "./EditorGroup";
+import type { EditorSelectionContext } from "../lib/ai-context";
 import styles from "./EditorWorkspace.module.css";
 
 interface EditorWorkspaceProps {
@@ -34,6 +35,7 @@ interface EditorWorkspaceProps {
   onTabChange: (tabId: string, value: string) => void;
   onTabClose: (groupId: string, tabId: string) => void;
   onNativeSelect: (native: NativeFunction) => void;
+  onSelectionChange?: (selection: EditorSelectionContext | null) => void;
 }
 
 export function EditorWorkspace({
@@ -48,6 +50,7 @@ export function EditorWorkspace({
   onTabChange,
   onTabClose,
   onNativeSelect,
+  onSelectionChange,
 }: EditorWorkspaceProps) {
   const [dragPayload, setDragPayload] = useState<TabDragPayload | null>(null);
   const layoutRef = useRef(layout);
@@ -163,6 +166,9 @@ export function EditorWorkspace({
         onTabDragEnd={() => setDragPayload(null)}
         onDropTab={(payload, zone, targetIndex) =>
           handleGroupDropTab(groupId, payload, zone, targetIndex)
+        }
+        onSelectionChange={
+          layout.focusedGroupId === groupId ? onSelectionChange : undefined
         }
       />
     );

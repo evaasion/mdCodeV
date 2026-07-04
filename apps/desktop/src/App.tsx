@@ -98,6 +98,19 @@ import { usePlugins } from "./hooks/usePlugins";
 import { useSqlDatabase } from "./hooks/useSqlDatabase";
 import { parseSelectContext } from "./lib/sql-query-utils";
 import { formatTablePreviewQuery } from "./lib/sql";
+import type { EditorSelectionContext } from "./lib/ai-context";
+import {
+  deleteAiKeychainKey,
+  getAiKeychainKey,
+  saveAiKeychainKey,
+} from "./lib/ai-keychain";
+import {
+  createDefaultReadFile,
+  createDefaultWriteFile,
+  defaultListDirectory,
+  toolConfirmMessage,
+  type AiToolHandlers,
+} from "./lib/ai-tools";
 import { loadSqlSettings, saveSqlSettings, type SqlSettings } from "./lib/sql-settings";
 import type { SqlSelectContext } from "./lib/sql-query-utils";
 import {
@@ -156,10 +169,26 @@ export default function App() {
   const [revealLine, setRevealLine] = useState<number | null>(null);
   const [saveState, setSaveState] = useState<string | null>(null);
   const [playState, setPlayState] = useState<string | null>(null);
+  const [editorSelection, setEditorSelection] = useState<EditorSelectionContext | null>(null);
 
   useEffect(() => {
     panelLayoutRef.current = panelLayout;
   }, [panelLayout]);
+
+  useEffect(() => {
+    void (async () => {
+      const settings = loadAiSettings();
+      if (!settings.rememberApiKey) return;
+      try {
+        const apiKey = await getAiKeychainKey(settings.provider);
+        if (apiKey) {
+          setAiSettings({ ...settings, apiKey });
+        }
+      } catch {
+        // keychain unavailable
+      }
+    })();
+  }, []);
 
   const persistPanelLayout = useCallback(() => {
     savePanelLayout(panelLayoutRef.current);
@@ -384,6 +413,64 @@ export default function App() {
     [project, tabs, workspace],
   );
 
+  const aiToolHandlers = useMemo<AiToolHandlers>(
+    () => ({
+      project,
+      readFile: createDefaultReadFile(project),
+      writeFile: createDefaultWriteFile(project),
+      listDirectory: (path) => defaultListDirectory(project, path),
+      sqlQuery: async (sql) => {
+        if (!sqlDatabase.status.connected) {
+          return "MySQL non connecté. Utilise l'onglet SQL pour te connecter.";
+        }
+        try {
+          const result = await sqlDatabase.executeQuery(sql);
+          if (!result) return "Requête annulée ou refusée.";
+          if (result.columns.length > 0) {
+            return JSON.stringify({
+              columns: result.columns,
+              rows: result.rows.slice(0, 30),
+              rowCount: result.rows.length,
+              truncated: result.truncated,
+              executionTimeMs: result.executionTimeMs,
+            });
+          }
+          return `${result.affectedRows} ligne(s) affectée(s)`;
+        } catch (err) {
+          return `Erreur SQL: ${err instanceof Error ? err.message : "inconnue"}`;
+        }
+      },
+      restartResource: async (resource) => {
+        if (!serverConsole.running) return "Serveur non démarré.";
+        await serverConsole.sendCommand(`restart ${resource}`);
+        return `Commande restart ${resource} envoyée`;
+      },
+      sendServerCommand: async (command) => {
+        if (!serverConsole.running) return "Serveur non démarré.";
+        await serverConsole.sendCommand(command);
+        return `Commande envoyée: ${command}`;
+      },
+      onFileWritten: async (path) => {
+        if (project) await refreshTree(project);
+        await openFile(path);
+      },
+      confirmToolAction: async (name, args) => {
+        if (!aiSettings.confirmToolActions) return true;
+        return window.confirm(toolConfirmMessage(name, args));
+      },
+    }),
+    [
+      project,
+      openFile,
+      refreshTree,
+      aiSettings.confirmToolActions,
+      serverConsole.running,
+      serverConsole.sendCommand,
+      sqlDatabase.status.connected,
+      sqlDatabase.executeQuery,
+    ],
+  );
+
   const saveActiveTab = useCallback(async () => {
     if (!activeTab) return;
 
@@ -464,11 +551,25 @@ export default function App() {
   }, [activeTab, updateTabContent]);
 
   const applyAgentCode = useCallback(
-    (code: string) => {
+    (code: string, mode: "append" | "replace" = "append") => {
       if (!activeTab) return;
+
+      if (
+        mode === "replace" &&
+        editorSelection &&
+        editorSelection.endOffset > editorSelection.startOffset
+      ) {
+        const next =
+          activeTab.content.slice(0, editorSelection.startOffset) +
+          code +
+          activeTab.content.slice(editorSelection.endOffset);
+        updateTabContent(activeTab.id, next);
+        return;
+      }
+
       updateTabContent(activeTab.id, `${activeTab.content.trimEnd()}\n\n${code}\n`);
     },
-    [activeTab, updateTabContent],
+    [activeTab, editorSelection, updateTabContent],
   );
 
   const handleScaffold = useCallback(
@@ -484,6 +585,14 @@ export default function App() {
       setSidebarTab("explorer");
     },
     [project, refreshTree],
+  );
+
+  const scaffoldFromAgent = useCallback(
+    async (resourceName: string, files: Record<string, string>) => {
+      await handleScaffold(resourceName, files);
+      setSaveState(`Ressource créée · ${resourceName}`);
+    },
+    [handleScaffold],
   );
 
   const handleInstallTemplate = useCallback(
@@ -689,6 +798,7 @@ export default function App() {
                 setSelectedNative(native);
                 setRightPanel("native");
               }}
+              onSelectionChange={setEditorSelection}
             />
           </main>
 
@@ -885,9 +995,17 @@ export default function App() {
           <div className={styles.detailWrap} style={{ width: panelLayout.detailWidth }}>
             <AgentPanel
               settings={aiSettings}
+              project={project}
+              framework={frameworkDetection}
+              tree={tree}
+              diagnostics={diagnostics}
+              exportCompletions={exportCompletions}
               activeFileName={activeTab?.fileName ?? null}
               activeCode={activeTab?.content ?? ""}
+              selection={editorSelection}
               onApplyCode={applyAgentCode}
+              onScaffoldResource={scaffoldFromAgent}
+              toolHandlers={aiToolHandlers}
               onOpenSettings={() => setShowSettings(true)}
             />
           </div>
@@ -922,8 +1040,19 @@ export default function App() {
           appearanceSettings={appearanceSettings}
           sqlSettings={sqlSettings}
           onSaveAi={(settings) => {
-            setAiSettings(settings);
-            saveAiSettings(settings);
+            void (async () => {
+              try {
+                if (settings.rememberApiKey && settings.apiKey.trim()) {
+                  await saveAiKeychainKey(settings.provider, settings.apiKey);
+                } else {
+                  await deleteAiKeychainKey(settings.provider);
+                }
+              } catch {
+                // keychain unavailable
+              }
+              setAiSettings(settings);
+              saveAiSettings(settings);
+            })();
           }}
           onSaveServer={(settings) => {
             setServerSettings(settings);

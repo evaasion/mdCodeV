@@ -5,6 +5,7 @@ mod plugins;
 mod remote;
 mod sql;
 mod sql_keychain;
+mod ai_keychain;
 
 use fxserver::FxServerState;
 use remote::SftpState;
@@ -67,6 +68,9 @@ pub fn run() {
             sql_keychain::sql_keychain_save,
             sql_keychain::sql_keychain_get,
             sql_keychain::sql_keychain_delete,
+            ai_keychain::ai_keychain_save,
+            ai_keychain::ai_keychain_get,
+            ai_keychain::ai_keychain_delete,
         ])
         .run(tauri::generate_context!())
         .expect("error while running mdcodeV");

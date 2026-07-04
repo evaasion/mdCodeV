@@ -1,3 +1,5 @@
+import type { FrameworkDetection } from "@mdcodev/fivem-project";
+import { buildSystemPrompt } from "./ai-agent-prompt";
 import type { AiSettings } from "./settings";
 
 export interface ChatMessage {
@@ -6,29 +8,19 @@ export interface ChatMessage {
   content: string;
 }
 
-const FIVEM_SYSTEM_PROMPT = `Tu es l'agent IA de mdcodeV, un IDE spécialisé FiveM / GTA RP.
-Règles strictes:
-- Génère du Lua FiveM valide uniquement
-- N'invente JAMAIS d'exports (ox_lib, QBCore, ESX, qbx_core)
-- Utilise les vraies APIs: lib.notify, QBCore.Functions.GetPlayer, exports.ox_inventory, etc.
-- Préfère PlayerPedId() à GetPlayerPed(-1)
-- Inclus fxmanifest.lua si tu crées une ressource complète
-- Réponds en français, code en anglais
-- Quand tu proposes du code, utilise des blocs \`\`\`lua`;
+export interface ScaffoldFile {
+  path: string;
+  content: string;
+}
 
-function buildSystemPrompt(settings: AiSettings): string {
-  const frameworkHints: Record<AiSettings["framework"], string> = {
-    qbcore: "Framework: QBCore. Utilise exports['qb-core']:GetCoreObject().",
-    qbox: "Framework: Qbox. Utilise exports.qbx_core:GetCoreObject().",
-    esx: "Framework: ESX. Utilise exports.es_extended:getSharedObject().",
-    standalone: "Framework: standalone. Pas de dépendance framework.",
-  };
-
-  return `${FIVEM_SYSTEM_PROMPT}\n${frameworkHints[settings.framework]}`;
+export interface ScaffoldBundle {
+  resourceName: string;
+  files: Record<string, string>;
 }
 
 async function streamOpenAiCompatible(
   settings: AiSettings,
+  frameworkDetection: FrameworkDetection | null,
   messages: ChatMessage[],
   onChunk: (text: string) => void,
 ): Promise<string> {
@@ -42,7 +34,7 @@ async function streamOpenAiCompatible(
       model: settings.model,
       stream: true,
       messages: [
-        { role: "system", content: buildSystemPrompt(settings) },
+        { role: "system", content: buildSystemPrompt(settings, frameworkDetection) },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
       ],
       temperature: 0.2,
@@ -89,6 +81,7 @@ async function streamOpenAiCompatible(
 
 async function streamAnthropic(
   settings: AiSettings,
+  frameworkDetection: FrameworkDetection | null,
   messages: ChatMessage[],
   onChunk: (text: string) => void,
 ): Promise<string> {
@@ -103,7 +96,7 @@ async function streamAnthropic(
       model: settings.model,
       max_tokens: 4096,
       stream: true,
-      system: buildSystemPrompt(settings),
+      system: buildSystemPrompt(settings, frameworkDetection),
       messages: messages
         .filter((m) => m.role !== "system")
         .map((m) => ({ role: m.role, content: m.content })),
@@ -152,6 +145,7 @@ async function streamAnthropic(
 
 export async function streamChat(
   settings: AiSettings,
+  frameworkDetection: FrameworkDetection | null,
   messages: ChatMessage[],
   onChunk: (text: string) => void,
 ): Promise<string> {
@@ -160,17 +154,48 @@ export async function streamChat(
   }
 
   if (settings.provider === "anthropic") {
-    return streamAnthropic(settings, messages, onChunk);
+    return streamAnthropic(settings, frameworkDetection, messages, onChunk);
   }
 
-  return streamOpenAiCompatible(settings, messages, onChunk);
+  return streamOpenAiCompatible(settings, frameworkDetection, messages, onChunk);
 }
 
 export function extractLuaBlocks(text: string): string[] {
   const blocks: string[] = [];
-  const re = /```(?:lua)?\s*\n([\s\S]*?)```/g;
+  const re = /```(?:lua)?(?!\s*path=)\s*\n([\s\S]*?)```/g;
   for (const match of text.matchAll(re)) {
     if (match[1]?.trim()) blocks.push(match[1].trim());
   }
   return blocks;
+}
+
+export function extractScaffoldFiles(text: string): ScaffoldFile[] {
+  const files: ScaffoldFile[] = [];
+  const re = /```(?:lua)?\s*path=([^\n]+)\n([\s\S]*?)```/g;
+  for (const match of text.matchAll(re)) {
+    const path = match[1]?.trim();
+    const content = match[2]?.trim();
+    if (path && content) {
+      files.push({ path, content });
+    }
+  }
+  return files;
+}
+
+export function parseScaffoldBundle(files: ScaffoldFile[]): ScaffoldBundle | null {
+  if (files.length === 0) return null;
+
+  const resourceName = files[0].path.split("/")[0]?.trim();
+  if (!resourceName) return null;
+
+  const bundle: Record<string, string> = {};
+  for (const file of files) {
+    const normalized = file.path.replace(/\\/g, "/");
+    const relative = normalized.startsWith(`${resourceName}/`)
+      ? normalized.slice(resourceName.length + 1)
+      : normalized;
+    bundle[relative] = file.content;
+  }
+
+  return { resourceName, files: bundle };
 }

@@ -6,6 +6,10 @@ export interface AiSettings {
   baseUrl: string;
   model: string;
   framework: "qbcore" | "qbox" | "esx" | "standalone";
+  useAutoFramework: boolean;
+  rememberApiKey: boolean;
+  enableTools: boolean;
+  confirmToolActions: boolean;
 }
 
 const STORAGE_KEY = "mdcodev.ai.settings";
@@ -16,6 +20,10 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   baseUrl: "https://api.openai.com/v1",
   model: "gpt-4o-mini",
   framework: "qbcore",
+  useAutoFramework: true,
+  rememberApiKey: false,
+  enableTools: true,
+  confirmToolActions: true,
 };
 
 export function loadAiSettings(): AiSettings {
@@ -29,7 +37,10 @@ export function loadAiSettings(): AiSettings {
 }
 
 export function saveAiSettings(settings: AiSettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  const persisted = settings.rememberApiKey
+    ? { ...settings, apiKey: "" }
+    : settings;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
 }
 
 export type GamePlatform = "fivem" | "gta6";

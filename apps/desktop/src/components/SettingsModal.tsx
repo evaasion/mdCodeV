@@ -248,8 +248,18 @@ export function SettingsModal({
                   onChange={(e) => setAiDraft({ ...aiDraft, model: e.target.value })}
                 />
               </label>
+              <label className={styles.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={aiDraft.useAutoFramework ?? true}
+                  onChange={(e) =>
+                    setAiDraft({ ...aiDraft, useAutoFramework: e.target.checked })
+                  }
+                />
+                Détecter le framework depuis le projet ouvert
+              </label>
               <label>
-                Framework cible (agent IA)
+                Framework fallback (si auto désactivé)
                 <select
                   value={aiDraft.framework}
                   onChange={(e) =>
@@ -258,12 +268,41 @@ export function SettingsModal({
                       framework: e.target.value as AiSettings["framework"],
                     })
                   }
+                  disabled={aiDraft.useAutoFramework ?? true}
                 >
                   <option value="qbcore">QBCore</option>
                   <option value="qbox">Qbox</option>
                   <option value="esx">ESX</option>
                   <option value="standalone">Standalone</option>
                 </select>
+              </label>
+              <label className={styles.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={aiDraft.enableTools ?? true}
+                  onChange={(e) => setAiDraft({ ...aiDraft, enableTools: e.target.checked })}
+                />
+                Outils IDE (lire/écrire fichiers, SQL, console serveur)
+              </label>
+              <label className={styles.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={aiDraft.confirmToolActions ?? true}
+                  onChange={(e) =>
+                    setAiDraft({ ...aiDraft, confirmToolActions: e.target.checked })
+                  }
+                />
+                Confirmer écriture fichiers / commandes serveur
+              </label>
+              <label className={styles.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={aiDraft.rememberApiKey ?? false}
+                  onChange={(e) =>
+                    setAiDraft({ ...aiDraft, rememberApiKey: e.target.checked })
+                  }
+                />
+                Mémoriser la clé API (Keychain OS)
               </label>
             </>
           )}
