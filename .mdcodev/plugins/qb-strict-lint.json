@@ -1,0 +1,38 @@
+{
+  "id": "qb-strict-lint",
+  "name": "QBCore Strict Lint",
+  "version": "1.0.0",
+  "description": "Règles lint supplémentaires pour scripts QBCore",
+  "author": "mdcodeV",
+  "hooks": {
+    "lintRules": [
+      {
+        "id": "deprecated-qb-event",
+        "pattern": "QBCore:Client:OnPlayerLoaded",
+        "message": "Event legacy — préfère QBCore:Client:OnPlayerLoaded via le nouveau loader",
+        "severity": "warning"
+      },
+      {
+        "id": "raw-trigger-server",
+        "pattern": "TriggerServerEvent\\(['\"]qb-",
+        "message": "Vérifie que l'event serveur existe côté QBCore",
+        "severity": "info"
+      }
+    ],
+    "completions": [
+      {
+        "label": "QBCore.Functions.GetPlayerData()",
+        "insertText": "QBCore.Functions.GetPlayerData()",
+        "detail": "plugin: qb-strict-lint",
+        "documentation": "Récupère les données joueur côté client"
+      }
+    ],
+    "commands": [
+      {
+        "id": "qb-restart-core",
+        "label": "Restart qb-core",
+        "command": "restart qb-core"
+      }
+    ]
+  }
+}

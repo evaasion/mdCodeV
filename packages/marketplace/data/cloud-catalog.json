@@ -1,0 +1,36 @@
+{
+  "version": "1.1.0",
+  "updatedAt": "2026-06-30",
+  "templates": [
+    {
+      "id": "cloud-rp-chat",
+      "name": "Chat RP avancé",
+      "description": "Chat /me /do avec proximité — template cloud mdcodeV",
+      "author": "mdcodeV Cloud",
+      "category": "standalone",
+      "framework": "standalone",
+      "downloads": 5400,
+      "tags": ["chat", "rp", "cloud"],
+      "files": {
+        "fxmanifest.lua": "fx_version 'cerulean'\ngame 'gta5'\nlua54 'yes'\n\nname 'cloud-rp-chat'\nversion '1.0.0'\n\nclient_scripts { 'client.lua' }\n",
+        "client.lua": "local function proximitySay(message, range)\n    local coords = GetEntityCoords(PlayerPedId())\n    TriggerServerEvent('cloud-rp-chat:server:proximity', message, coords, range or 15.0)\nend\n\nRegisterCommand('me', function(_, args)\n    proximitySay(('* %s *'):format(table.concat(args, ' ')), 15.0)\nend)\n\nRegisterCommand('do', function(_, args)\n    proximitySay(('(( %s ))'):format(table.concat(args, ' ')), 15.0)\nend)\n",
+        "server.lua": "RegisterNetEvent('cloud-rp-chat:server:proximity', function(message, coords, range)\n    local src = source\n    TriggerClientEvent('chat:addMessage', -1, { args = { ('[%s]'):format(src), message } })\nend)\n"
+      }
+    },
+    {
+      "id": "cloud-ox-doorlock",
+      "name": "Doorlock ox_lib",
+      "description": "Système de portes verrouillées avec ox_lib — cloud template",
+      "author": "mdcodeV Cloud",
+      "category": "standalone",
+      "framework": "ox",
+      "downloads": 3100,
+      "tags": ["door", "ox_lib", "cloud"],
+      "files": {
+        "fxmanifest.lua": "fx_version 'cerulean'\ngame 'gta5'\nlua54 'yes'\n\nname 'cloud-ox-doorlock'\nversion '1.0.0'\n\nshared_scripts { '@ox_lib/init.lua', 'config.lua' }\nclient_scripts { 'client.lua' }\n\ndependencies { 'ox_lib' }\n",
+        "config.lua": "Config = {}\nConfig.Doors = {\n    { coords = vector3(434.7, -981.9, 30.7), locked = true, label = 'LSPD Main' },\n}\n",
+        "client.lua": "for i, door in ipairs(Config.Doors) do\n    RegisterCommand(('door%s'):format(i), function()\n        door.locked = not door.locked\n        lib.notify({ title = door.label, description = door.locked and 'Verrouillée' or 'Ouverte' })\n    end)\nend\n"
+      }
+    }
+  ]
+}

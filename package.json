@@ -1,0 +1,15 @@
+{
+  "name": "mdcodev",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "ingest": "npm run ingest -w @mdcodev/natives-core",
+    "dev": "npm run tauri dev -w @mdcodev/desktop",
+    "build": "npm run build -w @mdcodev/desktop",
+    "tauri": "npm run tauri -w @mdcodev/desktop"
+  }
+}

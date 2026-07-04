@@ -1,0 +1,140 @@
+.explorer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.toolBtn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.toolBtn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.toolBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.projectMeta {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.projectName {
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectType {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 12px;
+}
+
+.dir,
+.file,
+.fileActive {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  font-size: 12px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-right: 8px;
+  color: var(--text-secondary);
+}
+
+.dir:hover,
+.file:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.fileActive {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.chevron {
+  width: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.emptyDir {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-top: 2px;
+  padding-bottom: 4px;
+}
+
+.folderIcon,
+.fileIcon {
+  font-size: 10px;
+}
+
+.fileIcon {
+  color: var(--accent);
+}
+
+.empty {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.emptyText {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.openBtn {
+  margin-top: 14px;
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hint {
+  padding: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+}

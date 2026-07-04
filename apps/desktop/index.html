@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mdcodeV</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("mdcodev.appearance.settings");
+          var theme = "dark";
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed.theme === "black" || parsed.theme === "dark") theme = parsed.theme;
+          }
+          var bg = theme === "black" ? "#000000" : "#0d0f12";
+          var fg = theme === "black" ? "#d4d4d4" : "#e8ecf4";
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = "dark";
+          document.documentElement.style.background = bg;
+          var style = document.createElement("style");
+          style.textContent = "html,body,#root{background:" + bg + ";color:" + fg + "}";
+          document.head.appendChild(style);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

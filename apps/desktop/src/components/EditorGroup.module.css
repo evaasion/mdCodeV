@@ -1,0 +1,156 @@
+.group,
+.groupFocused {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-base);
+  position: relative;
+}
+
+.groupFocused {
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.35);
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
+.tab,
+.tabActive {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border-subtle);
+  min-width: 0;
+  position: relative;
+}
+
+.tabActive {
+  background: var(--bg-base);
+  border-top: 2px solid var(--accent);
+}
+
+.tabBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 0;
+  cursor: grab;
+}
+
+.tabBtn:active {
+  cursor: grabbing;
+}
+
+.tabActive .tabBtn {
+  color: var(--text-primary);
+}
+
+.tabIcon {
+  color: var(--accent);
+  font-size: 8px;
+  flex-shrink: 0;
+}
+
+.dirty {
+  color: var(--accent);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.closeTab {
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.closeTab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tabDropMarker,
+.tabDropMarkerEnd {
+  width: 2px;
+  align-self: stretch;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.tabDropMarkerEnd {
+  width: 2px;
+  min-height: 34px;
+}
+
+.monaco {
+  flex: 1;
+  min-height: 0;
+}
+
+.monacoLoading {
+  height: 100%;
+  width: 100%;
+}
+
+.emptyPane {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.dropOverlay {
+  position: absolute;
+  inset: 34px 0 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.dropZone {
+  position: absolute;
+  background: rgba(249, 115, 22, 0.18);
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+}
+
+.drop_left {
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+
+.drop_right {
+  right: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+
+.drop_top {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 50%;
+}
+
+.drop_bottom {
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 50%;
+}

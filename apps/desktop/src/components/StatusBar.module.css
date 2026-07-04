@@ -1,0 +1,53 @@
+.bar {
+  height: var(--statusbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+}
+
+.left,
+.center,
+.right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.center {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.native {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted {
+  opacity: 0.75;
+}
+
+.item {
+  font-weight: 500;
+}
+
+.sep {
+  opacity: 0.5;
+}
+
+.ready,
+.serverOn {
+  font-weight: 600;
+}
+
+.serverOn {
+  color: #bbf7d0;
+}

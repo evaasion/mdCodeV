@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-30",
+  "templates": [
+    {
+      "id": "qb-garage",
+      "name": "Garage QBCore",
+      "description": "Garage véhicules avec spawn, rangement et liste owned vehicles",
+      "author": "mdcodeV",
+      "category": "vehicles",
+      "framework": "qbcore",
+      "downloads": 1240,
+      "tags": ["garage", "vehicles", "qbcore"],
+      "files": {
+        "fxmanifest.lua": "fx_version 'cerulean'\ngame 'gta5'\nlua54 'yes'\n\nname 'qb-garage'\ndescription 'Garage QBCore - mdcodeV marketplace'\nversion '1.0.0'\n\nshared_scripts { 'config.lua' }\nclient_scripts { 'client.lua' }\nserver_scripts { 'server.lua' }\n\ndependencies { 'qb-core' }\n",
+        "config.lua": "Config = {}\n\nConfig.Garages = {\n    {\n        label = 'Legion Garage',\n        coords = vector3(215.9, -809.5, 30.7),\n        spawn = vector4(229.7, -800.1, 30.6, 160.0),\n    },\n}\n",
+        "client.lua": "local QBCore = exports['qb-core']:GetCoreObject()\n\nlocal function openGarage(garage)\n    QBCore.Functions.TriggerCallback('qb-garage:server:getVehicles', function(vehicles)\n        print(('[Garage] %s vehicles'):format(#vehicles))\n    end)\nend\n\nCreateThread(function()\n    for _, garage in ipairs(Config.Garages) do\n        -- TODO: ox_target zone ici\n        RegisterCommand('garage', function() openGarage(garage) end)\n    end\nend)\n",
+        "server.lua": "local QBCore = exports['qb-core']:GetCoreObject()\n\nQBCore.Functions.CreateCallback('qb-garage:server:getVehicles', function(source, cb)\n    local Player = QBCore.Functions.GetPlayer(source)\n    if not Player then return cb({}) end\n    cb({})\nend)\n"
+      }
+    },
+    {
+      "id": "ox-ambulance",
+      "name": "Job Ambulance ox_lib",
+      "description": "Job EMS avec prise de service, revive et facturation basique",
+      "author": "mdcodeV",
+      "category": "jobs",
+      "framework": "ox",
+      "downloads": 890,
+      "tags": ["job", "ems", "ox_lib"],
+      "files": {
+        "fxmanifest.lua": "fx_version 'cerulean'\ngame 'gta5'\nlua54 'yes'\n\nname 'ox-ambulance'\ndescription 'EMS job - mdcodeV marketplace'\nversion '1.0.0'\n\nshared_scripts { '@ox_lib/init.lua', 'config.lua' }\nclient_scripts { 'client.lua' }\nserver_scripts { 'server.lua' }\n\ndependencies { 'ox_lib' }\n",
+        "config.lua": "Config = {}\n\nConfig.RevivePrice = 500\nConfig.Hospitals = {\n    vector3(307.7, -595.3, 43.3),\n}\n",
+        "client.lua": "local onDuty = false\n\nRegisterNetEvent('ox-ambulance:client:setDuty', function(state)\n    onDuty = state\n    lib.notify({ title = 'EMS', description = state and 'En service' or 'Hors service' })\nend)\n\nRegisterCommand('emsduty', function()\n    TriggerServerEvent('ox-ambulance:server:toggleDuty')\nend)\n\nRegisterCommand('revive', function()\n    if not onDuty then return end\n    TriggerServerEvent('ox-ambulance:server:reviveNearest')\nend)\n",
+        "server.lua": "RegisterNetEvent('ox-ambulance:server:toggleDuty', function()\n    local src = source\n    TriggerClientEvent('ox-ambulance:client:setDuty', src, true)\nend)\n\nRegisterNetEvent('ox-ambulance:server:reviveNearest', function()\n    local src = source\n    print(('[EMS] revive by %s'):format(src))\nend)\n"
+      }
+    },
+    {
+      "id": "qb-atm",
+      "name": "ATM / Banking QBCore",
+      "description": "ATM interactif avec dépôt et retrait",
+      "author": "mdcodeV",
+      "category": "economy",
+      "framework": "qbcore",
+      "downloads": 2100,
+      "tags": ["bank", "atm", "economy"],
+      "files": {
+        "fxmanifest.lua": "fx_version 'cerulean'\ngame 'gta5'\nlua54 'yes'\n\nname 'qb-atm'\nversion '1.0.0'\n\nshared_scripts { 'config.lua' }\nclient_scripts { 'client.lua' }\nserver_scripts { 'server.lua' }\n\ndependencies { 'qb-core' }\n",
+        "config.lua": "Config = {}\nConfig.ATMs = { `prop_atm_01`, `prop_atm_02`, `prop_atm_03` }\n",
+        "client.lua": "local QBCore = exports['qb-core']:GetCoreObject()\n\nRegisterCommand('atm', function()\n    TriggerServerEvent('qb-atm:server:open')\nend)\n",
+        "server.lua": "local QBCore = exports['qb-core']:GetCoreObject()\n\nRegisterNetEvent('qb-atm:server:open', function()\n    local src = source\n    local Player = QBCore.Functions.GetPlayer(src)\n    if not Player then return end\n    TriggerClientEvent('QBCore:Notify', src, 'ATM ouvert', 'success')\nend)\n"
+      }
+    },
+    {
+      "id": "status-hud",
+      "name": "HUD Status NUI",
+      "description": "HUD faim/soif/stress avec NUI minimal",
+      "author": "mdcodeV",
+      "category": "ui",
+      "framework": "standalone",
+      "downloads": 3200,
+      "tags": ["hud", "nui", "status"],
+      "files": {
+        "fxmanifest.lua": "fx_version 'cerulean'\ngame 'gta5'\nlua54 'yes'\n\nname 'status-hud'\nversion '1.0.0'\n\nui_page 'html/index.html'\nclient_scripts { 'client.lua' }\n\nfiles { 'html/index.html', 'html/style.css', 'html/app.js' }\n",
+        "client.lua": "local hunger, thirst = 100, 100\n\nCreateThread(function()\n    while true do\n        hunger = math.max(0, hunger - 1)\n        thirst = math.max(0, thirst - 1.5)\n        SendNUIMessage({ action = 'update', hunger = hunger, thirst = thirst })\n        Wait(10000)\n    end\nend)\n",
+        "html/index.html": "<!DOCTYPE html><html><head><link rel=\"stylesheet\" href=\"style.css\"></head><body><div id=\"hud\"><span id=\"hunger\"></span><span id=\"thirst\"></span></div><script src=\"app.js\"></script></body></html>",
+        "html/style.css": "#hud{position:fixed;bottom:24px;right:24px;display:flex;gap:12px;color:#fff;font-family:sans-serif;background:rgba(0,0,0,.5);padding:10px 14px;border-radius:10px}",
+        "html/app.js": "window.addEventListener('message',e=>{if(e.data?.action!=='update')return;document.getElementById('hunger').textContent='🍔 '+e.data.hunger;document.getElementById('thirst').textContent='💧 '+e.data.thirst});"
+      }
+    },
+    {
+      "id": "qbox-vehicleshop",
+      "name": "Vehicle Shop Qbox",
+      "description": "Concessionnaire véhicules avec preview et achat",
+      "author": "mdcodeV",
+      "category": "vehicles",
+      "framework": "qbox",
+      "downloads": 670,
+      "tags": ["vehicles", "shop", "qbox"],
+      "files": {
+        "fxmanifest.lua": "fx_version 'cerulean'\ngame 'gta5'\nlua54 'yes'\n\nname 'qbox-vehicleshop'\nversion '1.0.0'\n\nshared_scripts { '@ox_lib/init.lua', 'config.lua' }\nclient_scripts { 'client.lua' }\nserver_scripts { 'server.lua' }\n\ndependencies { 'qbx_core', 'ox_lib' }\n",
+        "config.lua": "Config = {}\nConfig.Shop = vector3(-56.7, -1096.7, 26.4)\nConfig.Vehicles = {\n    { model = 'blista', price = 8000, label = 'Blista' },\n    { model = 'asea', price = 5000, label = 'Asea' },\n}\n",
+        "client.lua": "RegisterCommand('vehshop', function()\n    local options = {}\n    for _, v in ipairs(Config.Vehicles) do\n        options[#options+1] = {\n            title = v.label,\n            description = ('$%s'):format(v.price),\n            onSelect = function()\n                TriggerServerEvent('qbox-vehicleshop:server:buy', v.model, v.price)\n            end,\n        }\n    end\n    lib.registerContext({ id = 'vehshop', title = 'Concession', options = options })\n    lib.showContext('vehshop')\nend)\n",
+        "server.lua": "RegisterNetEvent('qbox-vehicleshop:server:buy', function(model, price)\n    local src = source\n    print(('[VehShop] %s achète %s pour $%s'):format(src, model, price))\nend)\n"
+      }
+    }
+  ]
+}
