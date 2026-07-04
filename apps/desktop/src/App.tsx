@@ -31,6 +31,10 @@ import { RemoteConnectModal } from "./components/RemoteConnectModal";
 import { SqlConnectModal } from "./components/SqlConnectModal";
 import { SqlImportModal } from "./components/SqlImportModal";
 import { SqlTableToolsModal } from "./components/SqlTableToolsModal";
+import {
+  AiWriteDiffModal,
+  type AiWriteDiffRequest,
+} from "./components/AiWriteDiffModal";
 import { DatabasePanel } from "./components/DatabasePanel";
 import { StatusBar } from "./components/StatusBar";
 import { DEFAULT_LUA } from "./lib/defaults";
@@ -108,6 +112,7 @@ import {
   createDefaultReadFile,
   createDefaultWriteFile,
   defaultListDirectory,
+  resolveProjectPath,
   toolConfirmMessage,
   type AiToolHandlers,
 } from "./lib/ai-tools";
@@ -170,6 +175,8 @@ export default function App() {
   const [saveState, setSaveState] = useState<string | null>(null);
   const [playState, setPlayState] = useState<string | null>(null);
   const [editorSelection, setEditorSelection] = useState<EditorSelectionContext | null>(null);
+  const [writeDiffRequest, setWriteDiffRequest] = useState<AiWriteDiffRequest | null>(null);
+  const writeDiffResolverRef = useRef<((value: boolean) => void) | null>(null);
 
   useEffect(() => {
     panelLayoutRef.current = panelLayout;
@@ -413,6 +420,53 @@ export default function App() {
     [project, tabs, workspace],
   );
 
+  const confirmAiToolAction = useCallback(
+    async (name: string, args: Record<string, unknown>) => {
+      if (!aiSettings.confirmToolActions) return true;
+
+      if (name === "write_project_file") {
+        const path = String(args.path ?? "");
+        const newContent = String(args.content ?? "");
+        const resolved = resolveProjectPath(project, path);
+        if (!resolved) return false;
+
+        let oldContent = "";
+        try {
+          oldContent = await readProjectFile(project, resolved);
+        } catch {
+          oldContent = "";
+        }
+
+        if (oldContent === newContent) return true;
+
+        const root = project?.rootPath.replace(/\\/g, "/").replace(/\/+$/, "") ?? "";
+        const displayPath =
+          root && resolved.replace(/\\/g, "/").startsWith(root)
+            ? resolved.replace(/\\/g, "/").slice(root.length + 1)
+            : resolved;
+
+        return new Promise<boolean>((resolve) => {
+          writeDiffResolverRef.current = resolve;
+          setWriteDiffRequest({
+            path: resolved,
+            displayPath,
+            oldContent,
+            newContent,
+          });
+        });
+      }
+
+      return window.confirm(toolConfirmMessage(name, args));
+    },
+    [aiSettings.confirmToolActions, project],
+  );
+
+  const resolveWriteDiff = useCallback((approved: boolean) => {
+    writeDiffResolverRef.current?.(approved);
+    writeDiffResolverRef.current = null;
+    setWriteDiffRequest(null);
+  }, []);
+
   const aiToolHandlers = useMemo<AiToolHandlers>(
     () => ({
       project,
@@ -454,16 +508,13 @@ export default function App() {
         if (project) await refreshTree(project);
         await openFile(path);
       },
-      confirmToolAction: async (name, args) => {
-        if (!aiSettings.confirmToolActions) return true;
-        return window.confirm(toolConfirmMessage(name, args));
-      },
+      confirmToolAction: confirmAiToolAction,
     }),
     [
       project,
       openFile,
       refreshTree,
-      aiSettings.confirmToolActions,
+      confirmAiToolAction,
       serverConsole.running,
       serverConsole.sendCommand,
       sqlDatabase.status.connected,
@@ -1091,6 +1142,14 @@ export default function App() {
         <RemoteConnectModal
           onOpen={openRemoteProject}
           onClose={() => setShowRemoteConnect(false)}
+        />
+      )}
+
+      {writeDiffRequest && (
+        <AiWriteDiffModal
+          request={writeDiffRequest}
+          onApply={() => resolveWriteDiff(true)}
+          onCancel={() => resolveWriteDiff(false)}
         />
       )}
 
